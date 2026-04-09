@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Puntos de Interés</title>
+
+<style>
+body { font-family: Arial; background:#0f172a; color:white; padding:20px; }
+.card { background:#1e293b; padding:15px; margin:10px 0; border-radius:10px; }
+input, select, button { padding:10px; margin:5px; border-radius:5px; border:none; }
+button { background:#3b82f6; color:white; cursor:pointer; }
+</style>
+
+</head>
+<body>
+
+<h1>📍 Sistema de Puntos</h1>
+
+<div class="card">
+<h3>Agregar punto</h3>
+
+<input id="nombre" placeholder="Nombre">
+<input id="descripcion" placeholder="Descripción">
+
+<select id="categoria">
+    <option value="cultural">Cultural</option>
+    <option value="gastronomico">Gastronómico</option>
+    <option value="salud">Salud</option>
+    <option value="servicio">Servicio</option>
+</select>
+
+<input id="lat" placeholder="Latitud">
+<input id="lon" placeholder="Longitud">
+
+<button onclick="guardar()">Guardar</button>
+</div>
+
+<div class="card">
+<h3>Buscar cercanos</h3>
+<input id="lat2" placeholder="Latitud">
+<input id="lon2" placeholder="Longitud">
+<input id="radio" placeholder="Radio (ej: 2000)">
+<button onclick="cercanos()">Buscar</button>
+</div>
+
+<div id="resultados"></div>
+
+<div class="card">
+<h3>ver todos</h3>
+<button onclick="cargarTodo()">Cargar todos</button>
+</div>
+
+<script>
+
+function mostrar(data) {
+    let div = document.getElementById("resultados");
+    div.innerHTML = "";
+
+    data.forEach(p => {
+        let card = document.createElement("div");
+        card.className = "card";
+
+        let contenido = `<b>${p[0]}</b><br>Categoría: ${p[1]}`;
+
+        // si hay distancia numérica
+        if (typeof p[2] === "number") {
+            contenido += `<br>Distancia: ${p[2].toFixed(2)} m`;
+        }
+
+        card.innerHTML = contenido;
+        div.appendChild(card);
+    });
+}
+
+function guardar() {
+    fetch("/api/puntos", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            nombre: document.getElementById("nombre").value,
+            descripcion: document.getElementById("descripcion").value,
+            categoria: document.getElementById("categoria").value,
+            lat: parseFloat(document.getElementById("lat").value),
+            lon: parseFloat(document.getElementById("lon").value)
+        })
+    })
+    .then(res => res.json())
+    .then(() => alert("Guardado correctamente"));
+}
+
+function cercanos() {
+    let lat = document.getElementById("lat2").value;
+    let lon = document.getElementById("lon2").value;
+    let radio = document.getElementById("radio").value;
+
+    fetch(`/api/puntos/cerca?lat=${lat}&lon=${lon}&radio=${radio}`)
+        .then(res => res.json())
+        .then(data => mostrar(data));
+}
+
+function cargarTodo() {
+    fetch("/api/puntos")
+        .then(res => res.json())
+        .then(data => mostrar(data));
+}
+
+</script>
+
+</body>
+</html>
