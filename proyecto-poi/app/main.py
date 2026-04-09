@@ -14,14 +14,15 @@ def get_conn():
     )
 
 @app.get("/api/puntos")
-def listar():
+def listar( cat: str = None):
     conn = get_conn()
     cur = conn.cursor()
     
     cur.execute("""
         SELECT nombre, categoria
-        FROM puntos_interes;
-    """)
+        FROM puntos_interes
+        WHERE (%s IS NULL OR categoria = %s);
+    """, (cat, cat))
     
     data = cur.fetchall()
     conn.close()
@@ -104,3 +105,19 @@ async def crear_punto(request: Request):
     conn.close()
 
     return {"mensaje": "Punto guardado"}
+
+@app.get("/api/categorias")
+def obtener_categorias():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT DISTINCT categoria
+        FROM puntos_interes
+        ORDER BY categoria;
+    """)
+
+    data = [row[0] for row in cur.fetchall()]
+    conn.close()
+
+    return data

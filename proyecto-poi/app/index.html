@@ -46,8 +46,15 @@ button { background:#3b82f6; color:white; cursor:pointer; }
 <div id="resultados"></div>
 
 <div class="card">
-<h3>ver todos</h3>
-<button onclick="cargarTodo()">Cargar todos</button>
+<h3>Ver puntos</h3>
+
+<select id="categoriaFiltro">
+    <option value="">Cargando...</option>
+</select>
+
+<button onclick="cargarTodo()">Buscar</button>
+<button onclick="cargarSoloTodos()">Ver todos</button>
+
 </div>
 
 <script>
@@ -86,6 +93,7 @@ function guardar() {
     })
     .then(res => res.json())
     .then(() => alert("Guardado correctamente"));
+     cargarCategorias();
 }
 
 function cercanos() {
@@ -99,10 +107,55 @@ function cercanos() {
 }
 
 function cargarTodo() {
+    let cat = document.getElementById("categoriaFiltro").value;
+
+    let url = "/api/puntos";
+
+    if (cat) {
+        url += `?cat=${cat}`;
+    }
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => mostrar(data));
+}
+
+function cargarSoloTodos() {
     fetch("/api/puntos")
         .then(res => res.json())
         .then(data => mostrar(data));
 }
+
+function cargarCategorias() {
+    fetch("/api/categorias")
+        .then(res => res.json())
+        .then(data => {
+
+            let comboFiltro = document.getElementById("categoriaFiltro");
+            let comboGuardar = document.getElementById("categoria");
+
+            comboFiltro.innerHTML = '<option value="">-- Todas --</option>';
+            comboGuardar.innerHTML = '';
+
+            data.forEach(cat => {
+                // filtro
+                let opt1 = document.createElement("option");
+                opt1.value = cat;
+                opt1.textContent = cat;
+                comboFiltro.appendChild(opt1);
+
+                // guardar
+                let opt2 = document.createElement("option");
+                opt2.value = cat;
+                opt2.textContent = cat;
+                comboGuardar.appendChild(opt2);
+            });
+        });
+}
+
+window.onload = function() {
+    cargarCategorias();
+};
 
 </script>
 
