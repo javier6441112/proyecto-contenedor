@@ -14,16 +14,26 @@ def get_conn():
     )
 
 @app.get("/api/puntos")
-def listar( cat: str = None):
+def listar(cat: str = None):
     conn = get_conn()
     cur = conn.cursor()
-    
-    cur.execute("""
-        SELECT nombre, categoria
-        FROM puntos_interes
-        WHERE (%s IS NULL OR categoria = %s);
-    """, (cat, cat))
-    
+
+    if cat:
+        cur.execute("""
+            SELECT nombre, categoria,
+                   ST_Y(ubicacion::geometry),
+                   ST_X(ubicacion::geometry)
+            FROM puntos_interes
+            WHERE categoria = %s;
+        """, (cat,))
+    else:
+        cur.execute("""
+            SELECT nombre, categoria,
+                   ST_Y(ubicacion::geometry),
+                   ST_X(ubicacion::geometry)
+            FROM puntos_interes;
+        """)
+
     data = cur.fetchall()
     conn.close()
     return data
@@ -63,19 +73,21 @@ def cerca(lat: float, lon: float, radio: float):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("""
-        SELECT nombre, categoria,
-               ST_Distance(
-                   ubicacion,
-                   ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography
-               ) as distancia
-        FROM puntos_interes
-        WHERE ST_DWithin(
-            ubicacion,
-            ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
-            %s
-        )
-        ORDER BY distancia;
-    """, (lon, lat, lon, lat, radio))
+    SELECT nombre, categoria,
+           ST_Distance(
+               ubicacion,
+               ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography
+           ) as distancia,
+           ST_Y(ubicacion::geometry) as lat,
+           ST_X(ubicacion::geometry) as lon
+    FROM puntos_interes
+    WHERE ST_DWithin(
+        ubicacion,
+        ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
+        %s
+    )
+    ORDER BY distancia;
+""", (lon, lat, lon, lat, radio))
     
     data = cur.fetchall()
     conn.close()

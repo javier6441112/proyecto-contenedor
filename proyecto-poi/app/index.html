@@ -11,6 +11,9 @@ input, select, button { padding:10px; margin:5px; border-radius:5px; border:none
 button { background:#3b82f6; color:white; cursor:pointer; }
 </style>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 </head>
 <body>
 
@@ -57,26 +60,59 @@ button { background:#3b82f6; color:white; cursor:pointer; }
 
 </div>
 
+<div class="card">
+    <h3>Mapa</h3>
+    <div id="map" style="height:400px;"></div>
+</div>
+
 <script>
+let mapMarkers = [];
 
 function mostrar(data) {
     let div = document.getElementById("resultados");
     div.innerHTML = "";
 
+    // limpiar marcadores
+    mapMarkers.forEach(m => map.removeLayer(m));
+    mapMarkers = [];
+
     data.forEach(p => {
         let card = document.createElement("div");
         card.className = "card";
 
-        let contenido = `<b>${p[0]}</b><br>Categoría: ${p[1]}`;
+        let nombre = p[0];
+        let categoria = p[1];
 
-        // si hay distancia numérica
-        if (typeof p[2] === "number") {
-            contenido += `<br>Distancia: ${p[2].toFixed(2)} m`;
+        let lat, lon, distancia;
+
+        if (p.length === 5) {
+            // con distancia
+            distancia = p[2];
+            lat = p[3];
+            lon = p[4];
+        } else {
+            // sin distancia
+            lat = p[2];
+            lon = p[3];
+        }
+
+        let contenido = `<b>${nombre}</b><br>Categoría: ${categoria}`;
+
+        if (distancia) {
+            contenido += `<br>Distancia: ${distancia.toFixed(2)} m`;
         }
 
         card.innerHTML = contenido;
         div.appendChild(card);
-    });
+
+        // agregar marcador
+        if (lat != null && lon != null) {
+            let m = L.marker([lat, lon])
+            .addTo(map)
+            .bindPopup(`<b>${nombre}</b><br>${categoria}`)
+            .bindTooltip(nombre, {permanent: true, direction: 'top'});
+                }
+            });
 }
 
 function guardar() {
@@ -153,9 +189,39 @@ function cargarCategorias() {
         });
 }
 
+let map;
+let marcador;
+
+function iniciarMapa() {
+    map = L.map('map').setView([14.6349, -90.5069], 13); // Guatemala por defecto
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Evento al hacer click en el mapa
+    map.on('click', function(e) {
+        let lat = e.latlng.lat;
+        let lon = e.latlng.lng;
+
+        // llenar inputs automáticamente
+        document.getElementById("lat").value = lat;
+        document.getElementById("lon").value = lon;
+
+        // mover marcador
+        if (marcador) {
+            marcador.setLatLng(e.latlng);
+        } else {
+            marcador = L.marker(e.latlng).addTo(map);
+        }
+    });
+}
+
 window.onload = function() {
+    iniciarMapa();
     cargarCategorias();
 };
+
 
 </script>
 
